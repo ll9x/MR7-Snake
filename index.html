@@ -1,0 +1,1185 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لعبة الثعبان والسلم - حركة سلسة</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f0f8ff;
+            margin: 0;
+            padding: 20px;
+        }
+        h1 {
+            color: #2c3e50;
+        }
+        #game-container {
+            display: inline-block;
+            margin: 20px auto;
+            position: relative;
+        }
+        #board {
+            border: 3px solid #2c3e50;
+            border-collapse: collapse;
+            background-color: white;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        #board td {
+            width: 50px;
+            height: 50px;
+            border: 1px solid #ddd;
+            text-align: center;
+            vertical-align: middle;
+            font-size: 14px;
+            position: relative;
+            font-weight: bold;
+        }
+        #board tr:nth-child(odd) td:nth-child(even),
+        #board tr:nth-child(even) td:nth-child(odd) {
+            background-color: #f9f9f9;
+        }
+        .player {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            margin: 0 auto;
+            position: absolute;
+            z-index: 10;
+            border: 2px solid white;
+            box-shadow: 0 0 5px rgba(0,0,0,0.3);
+            transition: all 0.5s ease-in-out;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+        }
+        .player1 {
+            background-color: #e74c3c;
+        }
+        .player2 {
+            background-color: #1b9ef5;
+        }
+        .connection {
+            position: absolute;
+            z-index: 1;
+            pointer-events: none;
+            stroke-width: 3px;
+        }
+        .snake {
+            stroke: #e74c3c;
+        }
+        .ladder {
+            stroke: #2ecc71;
+        }
+        #controls {
+            margin: 20px;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #0943cb;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #2980b9;
+            transform: translateY(-2px);
+        }
+        button:disabled {
+            background-color: #95a5a6;
+            cursor: not-allowed;
+        }
+        #status {
+            margin: 15px;
+            font-size: 18px;
+            font-weight: bold;
+            color: #2c3e50;
+            min-height: 60px;
+        }
+        #dice {
+            font-size: 28px;
+            margin: 15px;
+            padding: 15px;
+            background-color: white;
+            border: 2px solid #ddd;
+            display: inline-block;
+            width: 60px;
+            border-radius: 10px;
+        }
+        .connection-label {
+            position: absolute;
+            background-color: white;
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-size: 10px;
+            font-weight: bold;
+            z-index: 5;
+            box-shadow: 0 0 3px rgba(0,0,0,0.2);
+        }
+        .snake-label {
+            color: #c0392b;
+            border: 1px solid #c0392b;
+        }
+        .ladder-label {
+            color: #27ae60;
+            border: 1px solid #27ae60;
+        }
+        
+        /* أنماط واجهة الترحيب */
+        .welcome-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            color: white;
+            text-align: center;
+            animation: fadeIn 1s ease-in;
+        }
+        
+        .welcome-screen.hidden {
+            animation: fadeOut 0.5s ease-out forwards;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        
+        @keyframes fadeOut {
+            from { opacity: 1; transform: scale(1); }
+            to { opacity: 0; transform: scale(0.9); visibility: hidden; }
+        }
+        
+        .welcome-title {
+            font-size: 4em;
+            font-weight: bold;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            animation: bounce 2s infinite;
+        }
+        
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+            40% { transform: translateY(-10px); }
+            60% { transform: translateY(-5px); }
+        }
+        
+        .welcome-subtitle {
+            font-size: 1.5em;
+            margin-bottom: 30px;
+            opacity: 0.9;
+        }
+        
+        .welcome-features {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin: 40px 0;
+            flex-wrap: wrap;
+        }
+        
+        .feature-card {
+            background: rgba(255,255,255,0.1);
+            padding: 20px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+            min-width: 200px;
+            animation: slideUp 1s ease-out;
+        }
+        
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .feature-icon {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+        
+        .feature-title {
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+        
+        .feature-desc {
+            font-size: 0.9em;
+            opacity: 0.8;
+        }
+        
+        .start-button {
+            background: linear-gradient(45deg, #FF6B6B, #4ECDC4);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.3em;
+            font-weight: bold;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 15px rgba(0,0,0,0.2);
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        
+        .start-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 20px rgba(0,0,0,0.3);
+        }
+        
+        .developer-info {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            font-size: 0.9em;
+            opacity: 0.7;
+        }
+        
+        .game-content {
+            display: none;
+        }
+        
+        .game-content.active {
+            display: block;
+        }
+        
+        /* تصميم متجاوب للأجهزة المختلفة */
+        @media (max-width: 768px) {
+            /* الهواتف الذكية */
+            .welcome-title {
+                font-size: 2.5em;
+                margin-bottom: 15px;
+            }
+            
+            .welcome-subtitle {
+                font-size: 1.2em;
+                margin-bottom: 20px;
+            }
+            
+            .welcome-features {
+                flex-direction: column;
+                gap: 15px;
+                margin: 20px 0;
+                padding: 0 20px;
+            }
+            
+            .feature-card {
+                min-width: auto;
+                padding: 15px;
+                margin: 0;
+            }
+            
+            .feature-icon {
+                font-size: 1.5em;
+            }
+            
+            .feature-title {
+                font-size: 1em;
+            }
+            
+            .feature-desc {
+                font-size: 0.8em;
+            }
+            
+            .start-button {
+                padding: 12px 30px;
+                font-size: 1.1em;
+                margin: 20px 0;
+            }
+            
+            .developer-info {
+                position: relative;
+                bottom: auto;
+                right: auto;
+                text-align: center;
+                margin-top: 20px;
+                font-size: 0.8em;
+            }
+            
+            /* تصميم اللعبة للهواتف */
+            #game-container {
+                width: 95vw;
+                height: 95vw;
+                max-width: 400px;
+                max-height: 400px;
+                margin: 10px auto;
+            }
+            
+            #board {
+                width: 100%;
+                height: 100%;
+            }
+            
+            .cell {
+                font-size: 8px;
+                padding: 1px;
+            }
+            
+            .player {
+                width: 12px;
+                height: 12px;
+                border-radius: 6px;
+            }
+            
+            #controls {
+                flex-direction: column;
+                gap: 10px;
+                padding: 10px;
+                text-align: center;
+            }
+            
+            #controls button {
+                width: 100%;
+                max-width: 200px;
+                margin: 5px auto;
+                padding: 12px;
+                font-size: 14px;
+            }
+            
+            #status {
+                font-size: 16px;
+                margin-bottom: 10px;
+            }
+            
+            #dice {
+                font-size: 24px;
+                margin: 10px 0;
+            }
+        }
+        
+        @media (min-width: 769px) and (max-width: 1024px) {
+            /* الأجهزة اللوحية */
+            .welcome-title {
+                font-size: 3.5em;
+            }
+            
+            .welcome-subtitle {
+                font-size: 1.3em;
+            }
+            
+            .welcome-features {
+                gap: 25px;
+                margin: 30px 0;
+            }
+            
+            .feature-card {
+                min-width: 180px;
+                padding: 18px;
+            }
+            
+            .start-button {
+                padding: 14px 35px;
+                font-size: 1.2em;
+            }
+            
+            #game-container {
+                width: 70vw;
+                height: 70vw;
+                max-width: 500px;
+                max-height: 500px;
+            }
+            
+            .cell {
+                font-size: 10px;
+                padding: 2px;
+            }
+            
+            .player {
+                width: 16px;
+                height: 16px;
+                border-radius: 8px;
+            }
+            
+            #controls {
+                flex-direction: row;
+                justify-content: center;
+                gap: 15px;
+                flex-wrap: wrap;
+            }
+            
+            #controls button {
+                padding: 10px 20px;
+                font-size: 16px;
+            }
+        }
+        
+        @media (min-width: 1025px) {
+            /* أجهزة الكمبيوتر */
+            .welcome-screen {
+                padding: 20px;
+            }
+            
+            .welcome-features {
+                max-width: 800px;
+            }
+            
+            #game-container {
+                width: 60vw;
+                height: 60vw;
+                max-width: 600px;
+                max-height: 600px;
+            }
+        }
+        
+        /* تحسينات عامة للاستجابة */
+        * {
+            box-sizing: border-box;
+        }
+        
+        body {
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+        }
+        
+        .welcome-screen {
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        #game-container {
+            position: relative;
+            margin: 0 auto;
+        }
+        
+        #controls {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        #controls button {
+            white-space: nowrap;
+            min-width: 120px;
+        }
+    </style>
+</head>
+<body>
+    <!-- واجهة الترحيب -->
+    <div id="welcomeScreen" class="welcome-screen">
+        <div class="welcome-title">🎲Snake MR7🎲</div>
+        <div class="welcome-subtitle" style="color: rgb(219, 241, 20);"> Mostafa Alrawi  </div>
+        
+        <div class="welcome-features">
+            <div class="feature-card">
+                <div class="feature-icon">🐍</div>
+                <div class="feature-title">ثعابين وسلالم</div>
+                <div class="feature-desc">تأثيرات فورية ومتتالية</div>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">✨</div>
+                <div class="feature-title">مربعات خاصة</div>
+                <div class="feature-desc">موجبة وسالبة للإثارة</div>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🎯</div>
+                <div class="feature-title">قواعد متقدمة</div>
+                <div class="feature-desc">تصادم ورميات إضافية</div>
+            </div>
+        </div>
+        
+        <div style="margin: 20px 0 10px 0; display: flex; flex-direction: column; gap: 10px; align-items: center;">
+            <input id="player1Input" type="text" maxlength="12" placeholder="اسم اللاعب الأول" style="padding:8px; border-radius:6px; border:none; width:180px; text-align:center; font-size:1em;" />
+            <input id="player2Input" type="text" maxlength="12" placeholder="اسم اللاعب الثاني" style="padding:8px; border-radius:6px; border:none; width:180px; text-align:center; font-size:1em;" />
+        </div>
+        <button class="start-button" onclick="startGame()">🎮 ابدأ اللعب 🎮</button>
+        
+        <div class="developer-info">
+            <div style="text-align: center;">BY: MR7 - MostafaAlrawi</div>
+            <div>Snake & Ladder PRO</div>
+        </div>
+    </div>
+    
+    <!-- محتوى اللعبة -->
+    <div id="gameContent" class="game-content">
+        <div id="game-container">
+            <table id="board"></table>
+            <div id="player1" class="player player1"></div>
+            <div id="player2" class="player player2"></div>
+        </div>
+        <div id="controls">
+            <div id="status">دور اللاعب 1</div>
+            <div id="dice">-</div>
+            <button id="roll">إرم النرد</button>
+            <button id="reset">لعبة جديدة</button>
+            <button onclick="showWelcome()" style="margin-left: 10px; background: #e74c3c;">عودة للقائمة</button>
+        </div>
+    </div>
+
+    <script>
+        // دوال واجهة الترحيب
+
+        function startGame() {
+            const welcomeScreen = document.getElementById('welcomeScreen');
+            const gameContent = document.getElementById('gameContent');
+            const p1Input = document.getElementById('player1Input');
+            const p2Input = document.getElementById('player2Input');
+            
+            const name1 = (p1Input.value || '').trim();
+            const name2 = (p2Input.value || '').trim();
+            
+            if (!name1 || !name2) {
+                alert('يرجى إدخال اسم كل لاعب!');
+                return;
+            }
+            playerNames = [name1, name2];
+            
+            welcomeScreen.classList.add('hidden');
+            
+            setTimeout(() => {
+                welcomeScreen.style.display = 'none';
+                gameContent.classList.add('active');
+                
+                // بدء اللعبة
+                resetGame();
+            }, 500);
+        }
+        
+        function showWelcome() {
+            const welcomeScreen = document.getElementById('welcomeScreen');
+            const gameContent = document.getElementById('gameContent');
+            
+            gameContent.classList.remove('active');
+            welcomeScreen.style.display = 'flex';
+            welcomeScreen.classList.remove('hidden');
+        }
+        
+        // إعدادات اللعبة
+        const ROWS = 10;
+        const COLS = 10;
+        const TOTAL_CELLS = ROWS * COLS;
+        const MIN_SNAKES = 5;
+        const MAX_SNAKES = 8;
+        const MIN_LADDERS = 5;
+        const MAX_LADDERS = 8;
+        const MOVE_DELAY = 300; // تأخير الحركة بين الخلايا (بالمللي ثانية)
+        
+        // حالة اللعبة
+        let currentPlayer = 1;
+        let playerPositions = [1, 1];
+        let gameOver = false;
+        let snakes = [];
+        let ladders = [];
+        let negativeSquares = []; // مربعات سالبة ترجع الخصم
+        let positiveSquares = []; // مربعات موجبة تقدم اللاعب
+        let isMoving = false;
+        let playerNames = ['اللاعب 1', 'اللاعب 2']; // أسماء اللاعبين
+        
+        // عناصر DOM
+        const board = document.getElementById('board');
+        const statusElement = document.getElementById('status');
+        const diceElement = document.getElementById('dice');
+        const rollButton = document.getElementById('roll');
+        const resetButton = document.getElementById('reset');
+        const player1Element = document.getElementById('player1');
+        const player2Element = document.getElementById('player2');
+        
+        // تهيئة اللوحة
+        function initializeBoard() {
+            board.innerHTML = '';
+            
+            // إنشاء اللوحة بترتيب متعرج
+            for (let row = ROWS; row >= 1; row--) {
+                const tr = document.createElement('tr');
+                
+                const isReverseRow = row % 2 === 0;
+                const colsOrder = isReverseRow ? 
+                    Array.from({length: COLS}, (_, i) => COLS - i) : 
+                    Array.from({length: COLS}, (_, i) => i + 1);
+                
+                for (const col of colsOrder) {
+                    const cellNumber = (row - 1) * COLS + col;
+                    const td = document.createElement('td');
+                    td.textContent = cellNumber;
+                    td.id = `cell-${cellNumber}`;
+                    tr.appendChild(td);
+                }
+                
+                board.appendChild(tr);
+            }
+        }
+        
+        // توليد الثعابين والسلالم عشوائياً
+        function generateSnakesAndLadders() {
+            snakes = [];
+            ladders = [];
+            negativeSquares = [];
+            positiveSquares = [];
+            
+            // إزالة أي رسومات قديمة
+            document.querySelectorAll('.connection, .connection-label, .negative-square, .positive-square').forEach(el => el.remove());
+            
+            // توليد السلالم (خطوط خضراء)
+            const numLadders = getRandomInt(MIN_LADDERS, MAX_LADDERS);
+            for (let i = 0; i < numLadders; i++) {
+                let start, end;
+                do {
+                    start = getRandomInt(2, TOTAL_CELLS - 10);
+                    end = getRandomInt(start + 5, Math.min(start + 20, TOTAL_CELLS));
+                } while (ladders.some(l => l.start === start || l.end === end || Math.abs(l.start - start) < 5));
+                
+                ladders.push({start, end});
+                drawConnection(start, end, 'ladder');
+            }
+            
+            // توليد الثعابين (خطوط حمراء)
+            const numSnakes = getRandomInt(MIN_SNAKES, MAX_SNAKES);
+            for (let i = 0; i < numSnakes; i++) {
+                let start, end;
+                do {
+                    start = getRandomInt(10, TOTAL_CELLS);
+                    end = getRandomInt(1, start - 5);
+                } while (snakes.some(s => s.start === start || s.end === end || Math.abs(s.start - start) < 5));
+                
+                snakes.push({start, end});
+                drawConnection(start, end, 'snake');
+            }
+            
+            // توليد المربعات السالبة (ترجع الخصم)
+            const numNegativeSquares = getRandomInt(3, 6); // عدد عشوائي من المربعات السالبة
+            for (let i = 0; i < numNegativeSquares; i++) {
+                let position, negativeValue;
+                do {
+                    position = getRandomInt(10, TOTAL_CELLS - 10); // تجنب البداية والنهاية
+                    negativeValue = getRandomInt(1, 6); // قيمة سالبة من 1 إلى 6
+                } while (
+                    negativeSquares.some(ns => ns.position === position) ||
+                    snakes.some(s => s.start === position || s.end === position) ||
+                    ladders.some(l => l.start === position || l.end === position)
+                );
+                
+                negativeSquares.push({position, value: negativeValue});
+                markNegativeSquare(position, negativeValue);
+            }
+            
+            // توليد المربعات الموجبة (تقدم اللاعب)
+            const numPositiveSquares = getRandomInt(3, 6); // عدد عشوائي من المربعات الموجبة
+            for (let i = 0; i < numPositiveSquares; i++) {
+                let position, positiveValue;
+                do {
+                    position = getRandomInt(10, TOTAL_CELLS - 10); // تجنب البداية والنهاية
+                    positiveValue = getRandomInt(1, 6); // قيمة موجبة من 1 إلى 6
+                } while (
+                    positiveSquares.some(ps => ps.position === position) ||
+                    negativeSquares.some(ns => ns.position === position) ||
+                    snakes.some(s => s.start === position || s.end === position) ||
+                    ladders.some(l => l.start === position || l.end === position)
+                );
+                
+                positiveSquares.push({position, value: positiveValue});
+                markPositiveSquare(position, positiveValue);
+            }
+        }
+        
+        // رسم خطوط الاتصال (سلالم أو ثعابين)
+        function drawConnection(start, end, type) {
+            const startCell = document.getElementById(`cell-${start}`);
+            const endCell = document.getElementById(`cell-${end}`);
+            
+            if (!startCell || !endCell) return;
+            
+            const startRect = startCell.getBoundingClientRect();
+            const endRect = endCell.getBoundingClientRect();
+            const boardRect = board.getBoundingClientRect();
+            
+            const startX = startRect.left - boardRect.left + startRect.width / 2;
+            const startY = startRect.top - boardRect.top + startRect.height / 2;
+            const endX = endRect.left - boardRect.left + endRect.width / 2;
+            const endY = endRect.top - boardRect.top + endRect.height / 2;
+            
+            // إنشاء عنصر SVG للخط
+            const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+            svg.classList.add('connection', type);
+            svg.setAttribute('width', Math.abs(endX - startX) + 10);
+            svg.setAttribute('height', Math.abs(endY - startY) + 10);
+            svg.style.left = `${Math.min(startX, endX) - 5}px`;
+            svg.style.top = `${Math.min(startY, endY) - 5}px`;
+            
+            // رسم الخط
+            const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+            line.setAttribute('x1', startX < endX ? 5 : Math.abs(endX - startX) + 5);
+            line.setAttribute('y1', startY < endY ? 5 : Math.abs(endY - startY) + 5);
+            line.setAttribute('x2', startX < endX ? Math.abs(endX - startX) + 5 : 5);
+            line.setAttribute('y2', startY < endY ? Math.abs(endY - startY) + 5 : 5);
+            line.setAttribute('stroke', type === 'ladder' ? '#2ecc71' : '#e74c3c');
+            line.setAttribute('stroke-width', '3');
+            line.setAttribute('stroke-linecap', 'round');
+            
+            // إضافة رأس سهم للسلالم
+            if (type === 'ladder') {
+                const arrowSize = 8;
+                const angle = Math.atan2(endY - startY, endX - startX);
+                
+                const arrow1 = document.createElementNS("http://www.w3.org/2000/svg", "line");
+                arrow1.setAttribute('x1', startX < endX ? Math.abs(endX - startX) + 5 : 5);
+                arrow1.setAttribute('y1', startY < endY ? Math.abs(endY - startY) + 5 : 5);
+                arrow1.setAttribute('x2', startX < endX ? 
+                    Math.abs(endX - startX) + 5 - arrowSize * Math.cos(angle - Math.PI/6) : 
+                    5 - arrowSize * Math.cos(angle - Math.PI/6));
+                arrow1.setAttribute('y2', startY < endY ? 
+                    Math.abs(endY - startY) + 5 - arrowSize * Math.sin(angle - Math.PI/6) : 
+                    5 - arrowSize * Math.sin(angle - Math.PI/6));
+                arrow1.setAttribute('stroke', '#2ecc71');
+                arrow1.setAttribute('stroke-width', '3');
+                arrow1.setAttribute('stroke-linecap', 'round');
+                
+                const arrow2 = document.createElementNS("http://www.w3.org/2000/svg", "line");
+                arrow2.setAttribute('x1', startX < endX ? Math.abs(endX - startX) + 5 : 5);
+                arrow2.setAttribute('y1', startY < endY ? Math.abs(endY - startY) + 5 : 5);
+                arrow2.setAttribute('x2', startX < endX ? 
+                    Math.abs(endX - startX) + 5 - arrowSize * Math.cos(angle + Math.PI/6) : 
+                    5 - arrowSize * Math.cos(angle + Math.PI/6));
+                arrow2.setAttribute('y2', startY < endY ? 
+                    Math.abs(endY - startY) + 5 - arrowSize * Math.sin(angle + Math.PI/6) : 
+                    5 - arrowSize * Math.sin(angle + Math.PI/6));
+                arrow2.setAttribute('stroke', '#2ecc71');
+                arrow2.setAttribute('stroke-width', '3');
+                arrow2.setAttribute('stroke-linecap', 'round');
+                
+                svg.appendChild(arrow1);
+                svg.appendChild(arrow2);
+            }
+            
+            svg.appendChild(line);
+            document.getElementById('game-container').appendChild(svg);
+            
+            // إضافة نص
+            const label = document.createElement('div');
+            label.classList.add('connection-label', `${type}-label`);
+            label.textContent = `${start}→${end}`;
+            label.style.left = `${Math.min(startX, endX) + Math.abs(endX - startX)/2 - 15}px`;
+            label.style.top = `${Math.min(startY, endY) + Math.abs(endY - startY)/2 - 10}px`;
+            document.getElementById('game-container').appendChild(label);
+        }
+        
+        // تمييز المربعات السالبة بصرياً
+        function markNegativeSquare(position, value) {
+            const cell = document.getElementById(`cell-${position}`);
+            if (!cell) return;
+            
+            // إضافة علامة بصرية للمربع السالب
+            const negativeMarker = document.createElement('div');
+            negativeMarker.classList.add('negative-square');
+            negativeMarker.textContent = `-${value}`;
+            negativeMarker.style.position = 'absolute';
+            negativeMarker.style.top = '2px';
+            negativeMarker.style.right = '2px';
+            negativeMarker.style.background = '#ff4757';
+            negativeMarker.style.color = 'white';
+            negativeMarker.style.fontSize = '10px';
+            negativeMarker.style.fontWeight = 'bold';
+            negativeMarker.style.padding = '2px 4px';
+            negativeMarker.style.borderRadius = '3px';
+            negativeMarker.style.minWidth = '15px';
+            negativeMarker.style.textAlign = 'center';
+            negativeMarker.style.boxShadow = '0 1px 3px rgba(0,0,0,0.3)';
+            negativeMarker.style.zIndex = '5';
+            
+            // تغيير لون خلفية المربع
+            cell.style.backgroundColor = '#ffebee';
+            cell.style.border = '2px solid #ff4757';
+            
+            cell.appendChild(negativeMarker);
+        }
+        
+        // تمييز المربعات الموجبة بصرياً
+        function markPositiveSquare(position, value) {
+            const cell = document.getElementById(`cell-${position}`);
+            if (!cell) return;
+            
+            // إضافة علامة بصرية للمربع الموجب
+            const positiveMarker = document.createElement('div');
+            positiveMarker.classList.add('positive-square');
+            positiveMarker.textContent = `+${value}`;
+            positiveMarker.style.position = 'absolute';
+            positiveMarker.style.top = '2px';
+            positiveMarker.style.left = '2px';
+            positiveMarker.style.background = '#2ecc71';
+            positiveMarker.style.color = 'white';
+            positiveMarker.style.fontSize = '10px';
+            positiveMarker.style.fontWeight = 'bold';
+            positiveMarker.style.padding = '2px 4px';
+            positiveMarker.style.borderRadius = '3px';
+            positiveMarker.style.minWidth = '15px';
+            positiveMarker.style.textAlign = 'center';
+            positiveMarker.style.boxShadow = '0 1px 3px rgba(0,0,0,0.3)';
+            positiveMarker.style.zIndex = '5';
+            
+            // تغيير لون خلفية المربع
+            cell.style.backgroundColor = '#e8f5e8';
+            cell.style.border = '2px solid #2ecc71';
+            
+            cell.appendChild(positiveMarker);
+        }
+        
+        // تحريك اللاعب بشكل سلس
+        async function movePlayerSmoothly(player, targetPosition) {
+            isMoving = true;
+            rollButton.disabled = true;
+            
+            const playerElement = player === 1 ? player1Element : player2Element;
+            const targetCell = document.getElementById(`cell-${targetPosition}`);
+            const targetRect = targetCell.getBoundingClientRect();
+            const boardRect = board.getBoundingClientRect();
+            
+            // حساب الموضع النهائي بالنسبة للوحة
+            const targetX = targetRect.left - boardRect.left + targetRect.width / 2;
+            const targetY = targetRect.top - boardRect.top + targetRect.height / 2;
+            
+            // تحريك العنصر باستخدام CSS transition
+            playerElement.style.left = `${targetX}px`;
+            playerElement.style.top = `${targetY}px`;
+            
+            // الانتظار حتى تنتهي الحركة
+            await new Promise(resolve => {
+                playerElement.addEventListener('transitionend', resolve, { once: true });
+            });
+            
+            playerPositions[player-1] = targetPosition;
+            isMoving = false;
+            rollButton.disabled = false;
+        }
+        
+        // حركة اللاعب خطوة بخطوة
+        async function movePlayerStepByStep(player, steps) {
+            isMoving = true;
+            rollButton.disabled = true;
+            
+            const playerElement = player === 1 ? player1Element : player2Element;
+            let currentPos = playerPositions[player-1];
+            
+            // تحقق من قاعدة الوصول الدقيق لرقم 100
+            const stepsToWin = TOTAL_CELLS - currentPos;
+            let targetPosition;
+            
+            if (currentPos + steps > TOTAL_CELLS) {
+                // إذا كان النرد أكبر من الخطوات المطلوبة، اللاعب لا يتحرك
+                targetPosition = currentPos;
+                statusElement.textContent = `اللاعب ${player} يحتاج ${stepsToWin} بالضبط للفوز! (رمى ${steps})`;
+                
+                // انتظار لإظهار الرسالة
+                await new Promise(resolve => setTimeout(resolve, 1500));
+            } else {
+                targetPosition = currentPos + steps;
+            }
+            
+            // الحركة خطوة بخطوة
+            for (let pos = currentPos + 1; pos <= targetPosition; pos++) {
+                const targetCell = document.getElementById(`cell-${pos}`);
+                const targetRect = targetCell.getBoundingClientRect();
+                const boardRect = board.getBoundingClientRect();
+                
+                // حساب الموضع النهائي بالنسبة للوحة
+                const targetX = targetRect.left - boardRect.left + targetRect.width / 2;
+                const targetY = targetRect.top - boardRect.top + targetRect.height / 2;
+                
+                // تحريك العنصر
+                playerElement.style.left = `${targetX}px`;
+                playerElement.style.top = `${targetY}px`;
+                
+                // الانتظار حتى تنتهي الحركة
+                await new Promise(resolve => setTimeout(resolve, MOVE_DELAY));
+                
+                currentPos = pos;
+            }
+            
+            playerPositions[player-1] = targetPosition;
+            isMoving = false;
+            rollButton.disabled = false;
+            return targetPosition;
+        }
+        
+        // تحقق من وجود ثعبان أو سلم في الخلية
+        function checkSnakeOrLadder(position) {
+            // تحقق من السلالم
+            for (const ladder of ladders) {
+                if (ladder.start === position) {
+                    return {type: 'ladder', to: ladder.end};
+                }
+            }
+            
+            // تحقق من الثعابين
+            for (const snake of snakes) {
+                if (snake.start === position) {
+                    return {type: 'snake', to: snake.end};
+                }
+            }
+            
+            return null;
+        }
+        
+        // تحقق من وجود مربع سالب في الخلية
+        function checkNegativeSquare(position) {
+            for (const negSquare of negativeSquares) {
+                if (negSquare.position === position) {
+                    return {value: negSquare.value};
+                }
+            }
+            return null;
+        }
+        
+        // تحقق من وجود مربع موجب في الخلية
+        function checkPositiveSquare(position) {
+            for (const posSquare of positiveSquares) {
+                if (posSquare.position === position) {
+                    return {value: posSquare.value};
+                }
+            }
+            return null;
+        }
+        
+        // دالة مساعدة للتحقق من جميع التأثيرات الخاصة في موقع معين
+        async function processSpecialEffects(player, position, depth = 0) {
+            // تجنب الحلقة اللانهائية
+            if (depth > 5) return position;
+            
+            let currentPosition = position;
+            let hasEffect = false;
+            
+            // تحقق من الثعابين والسلالم أولاً
+            const snakeOrLadder = checkSnakeOrLadder(currentPosition);
+            if (snakeOrLadder) {
+                const message = snakeOrLadder.type === 'ladder' ? 
+                    `🪜 ${playerNames[player-1]} صعد بسلم من ${currentPosition} إلى ${snakeOrLadder.to}!` : 
+                    `🐍 ${playerNames[player-1]} انزلق بثعبان من ${currentPosition} إلى ${snakeOrLadder.to}!`;
+                
+                statusElement.textContent = message;
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                await movePlayerSmoothly(player, snakeOrLadder.to);
+                currentPosition = snakeOrLadder.to;
+                hasEffect = true;
+            }
+            
+            // إذا كان هناك تأثير، تحقق مرة أخرى في الموقع الجديد
+            if (hasEffect) {
+                return await processSpecialEffects(player, currentPosition, depth + 1);
+            }
+            
+            return currentPosition;
+        }
+        
+        // دالة لرمي النرد
+        async function rollDice() {
+            if (gameOver || isMoving) return;
+            
+            rollButton.disabled = true;
+            
+            // عرض رمي النرد
+            let rolls = 0;
+            const maxRolls = 10;
+            let diceValue = 1;
+            
+            const rollInterval = setInterval(() => {
+                diceValue = getRandomInt(1, 6);
+                diceElement.textContent = diceValue;
+                rolls++;
+                
+                if (rolls >= maxRolls) {
+                    clearInterval(rollInterval);
+                    movePlayer(diceValue);
+                }
+            }, 100);
+        }
+        
+        // تحريك اللاعب
+        async function movePlayer(steps) {
+            const player = currentPlayer;
+            const startPosition = playerPositions[player-1];
+            
+            // الحركة خطوة بخطوة
+            let newPosition = await movePlayerStepByStep(player, steps);
+            
+            // تحقق مما إذا وصل إلى النهاية
+            if (newPosition === TOTAL_CELLS) {
+                gameOver = true;
+                statusElement.textContent = `🎉 ${playerNames[player-1]} فاز! 🎉`;
+                return;
+            }
+            
+            // تحقق من جميع التأثيرات الخاصة (ثعابين، سلالم، إلخ)
+            newPosition = await processSpecialEffects(player, newPosition);
+            
+            // تحقق من وجود مربع سالب
+            const negativeSquare = checkNegativeSquare(newPosition);
+            if (negativeSquare) {
+                const opponentPlayer = player === 1 ? 2 : 1;
+                const opponentIndex = opponentPlayer - 1;
+                const opponentOldPosition = playerPositions[opponentIndex];
+                
+                // حساب الموقع الجديد: إذا كان عدد الخطوات أكبر من الموقع الحالي، يرجع إلى 1
+                let opponentNewPosition;
+                let messageText;
+                
+                if (negativeSquare.value >= opponentOldPosition) {
+                    // إذا كان عدد الخطوات أكبر من أو يساوي الموقع الحالي
+                    opponentNewPosition = 1;
+                    messageText = `💥 ${playerNames[player-1]} وقف على مربع سالب! ${playerNames[opponentIndex]} يرجع إلى البداية!`;
+                } else {
+                    // إذا كان عدد الخطوات أقل من الموقع الحالي
+                    opponentNewPosition = opponentOldPosition - negativeSquare.value;
+                    messageText = `💥 ${playerNames[player-1]} وقف على مربع سالب! ${playerNames[opponentIndex]} يرجع ${negativeSquare.value} خطوات!`;
+                }
+                
+                // تحديث موقع الخصم
+                playerPositions[opponentIndex] = opponentNewPosition;
+                
+                // تحريك الخصم بصرياً
+                await movePlayerSmoothly(opponentPlayer, opponentNewPosition);
+                
+                // عرض الرسالة المناسبة
+                statusElement.textContent = messageText;
+                
+                // انتظار لإظهار الرسالة
+                await new Promise(resolve => setTimeout(resolve, 2000));
+            }
+            
+            // تحقق من وجود مربع موجب
+            const positiveSquare = checkPositiveSquare(newPosition);
+            if (positiveSquare) {
+                const currentPlayerIndex = player - 1;
+                const currentPlayerOldPosition = playerPositions[currentPlayerIndex];
+                const currentPlayerNewPosition = Math.min(TOTAL_CELLS, currentPlayerOldPosition + positiveSquare.value);
+                
+                // تحديث موقع اللاعب الحالي
+                playerPositions[currentPlayerIndex] = currentPlayerNewPosition;
+                
+                // تحريك اللاعب بصرياً
+                await movePlayerSmoothly(player, currentPlayerNewPosition);
+                
+                // عرض رسالة
+                statusElement.textContent = `✨ ${playerNames[player-1]} وقف على مربع موجب! يتقدم ${positiveSquare.value} خطوات إضافية!`;
+                
+                // تحديث الموقع الجديد للتحقق من الفوز
+                newPosition = currentPlayerNewPosition;
+                
+                // تحقق من الفوز بعد التقدم
+                if (newPosition === TOTAL_CELLS) {
+                    gameOver = true;
+                    statusElement.textContent = `🎉 ${playerNames[player-1]} فاز! 🎉`;
+                    return;
+                }
+                
+                // انتظار لإظهار الرسالة
+                await new Promise(resolve => setTimeout(resolve, 1500));
+                
+                // تحقق من جميع التأثيرات الخاصة في الموقع الجديد
+                newPosition = await processSpecialEffects(player, newPosition);
+                
+                // تحديث موقع اللاعب بعد جميع التأثيرات
+                playerPositions[currentPlayerIndex] = newPosition;
+            }
+            
+            // تحقق من وجود تصادم مع اللاعب الآخر
+            let bonusRoll = false;
+            const opponentIndex = player === 1 ? 1 : 0; // فهرس اللاعب الآخر
+            const currentPlayerIndex = player - 1;
+            
+            // إذا وقف اللاعب على نفس مكان الخصم
+            if (playerPositions[opponentIndex] === playerPositions[currentPlayerIndex] && 
+                playerPositions[currentPlayerIndex] > 1) { // ليس في البداية
+                
+                // حساب الموقع الجديد للخصم: إذا كان عدد الخطوات أكبر من الموقع الحالي، يرجع إلى 1
+                const opponentOldPosition = playerPositions[opponentIndex];
+                let opponentNewPosition;
+                let collisionMessage;
+                
+                if (steps >= opponentOldPosition) {
+                    // إذا كان عدد خطوات النرد أكبر من أو يساوي الموقع الحالي
+                    opponentNewPosition = 1;
+                    collisionMessage = `💥 تصادم! ${playerNames[player-1]} أعاد ${playerNames[opponentIndex]} للبداية! رمية إضافية!`;
+                } else {
+                    // إذا كان عدد خطوات النرد أقل من الموقع الحالي
+                    opponentNewPosition = opponentOldPosition - steps;
+                    collisionMessage = `🎯 ${playerNames[player-1]} أرجع ${playerNames[opponentIndex]} بـ ${steps} خطوات! رمية إضافية!`;
+                }
+                
+                playerPositions[opponentIndex] = opponentNewPosition;
+                
+                // تحريك الخصم بصرياً إلى الموقع الجديد
+                const opponentElement = player === 1 ? player2Element : player1Element;
+                await movePlayerSmoothly(player === 1 ? 2 : 1, opponentNewPosition);
+                
+                // رسالة تأكيد وإعطاء دور إضافي
+                statusElement.textContent = collisionMessage;
+                bonusRoll = true;
+                
+                // انتظار قليل لإظهار الرسالة
+                await new Promise(resolve => setTimeout(resolve, 1500));
+            }
+            
+            if (!gameOver) {
+                if (!bonusRoll) {
+                    // تبديل اللاعب فقط إذا لم يحصل على رمية إضافية
+                    currentPlayer = currentPlayer === 1 ? 2 : 1;
+                    statusElement.textContent = `دور ${playerNames[currentPlayer-1]}`;
+                } else {
+                    // نفس اللاعب يلعب مرة أخرى
+                    statusElement.textContent = `دور ${playerNames[currentPlayer-1]} - رمية إضافية!`;
+                }
+            }
+        }
+        
+        // إعادة تعيين اللعبة
+        function resetGame() {
+            // إعادة تعيين الحالة
+            currentPlayer = 1;
+            playerPositions = [1, 1];
+            gameOver = false;
+            isMoving = false;
+            statusElement.textContent = `دور ${playerNames[0]}`;
+            diceElement.textContent = '-';
+            rollButton.disabled = false;
+            
+            // إعادة تهيئة اللوحة
+            initializeBoard();
+            generateSnakesAndLadders();
+            
+            // إعادة وضع اللاعبين
+            const startCell = document.getElementById('cell-1');
+            const startRect = startCell.getBoundingClientRect();
+            const boardRect = board.getBoundingClientRect();
+            
+            const startX = startRect.left - boardRect.left + startRect.width / 2;
+            const startY = startRect.top - boardRect.top + startRect.height / 2;
+            
+            player1Element.style.left = `${startX}px`;
+            player1Element.style.top = `${startY}px`;
+            player2Element.style.left = `${startX}px`;
+            player2Element.style.top = `${startY}px`;
+        }
+        
+        // دالة مساعدة للحصول على رقم عشوائي
+        function getRandomInt(min, max) {
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+        
+        // إعداد مستمعي الأحداث
+        rollButton.addEventListener('click', rollDice);
+        resetButton.addEventListener('click', resetGame);
+        
+        // بدء اللعبة
+        resetGame();
+    </script>
+</body>
+</html>
