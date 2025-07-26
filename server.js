@@ -1,78 +1,48 @@
-// خادم Node.js بسيط لغرف اللعب باستخدام Socket.IO
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
-const path = require('path');
-
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-const PORT = process.env.PORT || 3000;
+const port = process.env.PORT || 3000;
 
-// تقديم الملفات الثابتة
-app.use(express.static(path.join(__dirname)));
-
-// إدارة الغرف
-const rooms = {};
+// تقديم الملفات من مجلد public
+app.use(express.static('public'));
 
 io.on('connection', (socket) => {
-    let currentRoom = null;
-    let playerName = null;
+    console.log(`[+] New user connected: ${socket.id}`);
 
-    socket.on('createRoom', (name, callback) => {
-        let roomId;
-        do {
-            roomId = Math.random().toString(36).substring(2, 8).toUpperCase();
-        } while (rooms[roomId]);
-        rooms[roomId] = { players: [socket.id], names: [name] };
-        currentRoom = roomId;
-        playerName = name;
-        socket.join(roomId);
-        callback({ roomId });
+    socket.on('createRoom', () => {
+        const roomID = Math.random().toString(36).substring(2, 8);
+        socket.join(roomID);
+        socket.emit('roomCreated', roomID);
     });
 
-    socket.on('joinRoom', (roomId, name, callback) => {
-        if (!rooms[roomId]) {
-            callback({ error: 'الغرفة غير موجودة' });
-            return;
+    socket.on('joinRoom', (roomID) => {
+        const room = io.sockets.adapter.rooms.get(roomID);
+        if (room && room.size < 2) {
+            socket.join(roomID);
+            socket.emit('roomJoined', roomID);
+            io.to(roomID).emit('startGame');
+        } else {
+            socket.emit('roomError', 'Room full or invalid ID');
         }
-        if (rooms[roomId].players.length >= 2) {
-            callback({ error: 'الغرفة ممتلئة' });
-            return;
-        }
-        rooms[roomId].players.push(socket.id);
-        rooms[roomId].names.push(name);
-        currentRoom = roomId;
-        playerName = name;
-        socket.join(roomId);
-        callback({ success: true, names: rooms[roomId].names });
-        // إعلام اللاعب الأول بانضمام الثاني
-        io.to(roomId).emit('bothPlayersReady', rooms[roomId].names);
     });
 
-    socket.on('playerMove', (data) => {
-        if (currentRoom) {
-            socket.to(currentRoom).emit('playerMove', data);
-        }
+    socket.on('rollDice', (data) => {
+        socket.to(data.roomID).emit('opponentRolled', data.value);
+    });
+
+    socket.on('playerMoved', (data) => {
+        socket.to(data.roomID).emit('opponentMoved', data.position);
     });
 
     socket.on('disconnect', () => {
-        if (currentRoom && rooms[currentRoom]) {
-            const idx = rooms[currentRoom].players.indexOf(socket.id);
-            if (idx !== -1) {
-                rooms[currentRoom].players.splice(idx, 1);
-                rooms[currentRoom].names.splice(idx, 1);
-            }
-            if (rooms[currentRoom].players.length === 0) {
-                delete rooms[currentRoom];
-            } else {
-                io.to(currentRoom).emit('playerLeft');
-            }
-        }
+        console.log(`[-] User disconnected: ${socket.id}`);
     });
 });
 
-server.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+server.listen(port, () => {
+    console.log(`🚀 Server running on http://localhost:${port}`);
 });
