@@ -1,1 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Snake & Ladder Multiplayer</title>
+  <script src="/socket.io/socket.io.js"></script>
+  <style>
+    body { font-family: Arial; text-align: center; margin-top: 50px; }
+    input, button { padding: 10px; margin: 10px; font-size: 16px; }
+  </style>
+</head>
+<body>
+  <h1>🎲 Snake & Ladder Multiplayer</h1>
 
+  <div id="setup">
+    <button onclick="createRoom()">Create Room</button>
+    <input id="roomInput" placeholder="Room ID">
+    <button onclick="joinRoom()">Join Room</button>
+    <p id="roomInfo"></p>
+  </div>
+
+  <div id="game" style="display:none;">
+    <p id="status">Waiting...</p>
+    <button onclick="roll()">🎲 Roll Dice</button>
+    <p id="diceResult"></p>
+  </div>
+
+  <script>
+    const socket = io();
+    let currentRoom = '';
+
+    function createRoom() {
+      socket.emit('createRoom');
+    }
+
+    function joinRoom() {
+      const roomID = document.getElementById('roomInput').value.trim();
+      socket.emit('joinRoom', roomID);
+    }
+
+    socket.on('roomCreated', (roomID) => {
+      currentRoom = roomID;
+      document.getElementById('roomInfo').textContent = `Room ID: ${roomID}`;
+    });
+
+    socket.on('roomJoined', (roomID) => {
+      currentRoom = roomID;
+      document.getElementById('roomInfo').textContent = `Joined Room: ${roomID}`;
+    });
+
+    socket.on('startGame', () => {
+      document.getElementById('setup').style.display = 'none';
+      document.getElementById('game').style.display = 'block';
+      document.getElementById('status').textContent = 'Game Started!';
+    });
+
+    function roll() {
+      const value = Math.floor(Math.random() * 6) + 1;
+      document.getElementById('diceResult').textContent = `You rolled: ${value}`;
+      socket.emit('rollDice', { roomID: currentRoom, value });
+    }
+
+    socket.on('opponentRolled', (value) => {
+      document.getElementById('status').textContent = `Opponent rolled: ${value}`;
+    });
+  </script>
+</body>
+</html>
